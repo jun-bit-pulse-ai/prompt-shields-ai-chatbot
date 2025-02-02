@@ -14,6 +14,8 @@ import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
 import { useBlockSelector } from '@/hooks/use-block';
+import { PIIShield } from './pii-shield';
+import { checkForPII, anonymizeText } from '@/lib/pii-utils';
 
 export function Chat({
   id,
@@ -58,38 +60,35 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isBlockVisible = useBlockSelector((state) => state.isVisible);
 
-  const checkForPII = (message: string, patterns: Record<string, RegExp>) => {
-    const detected: { type: string; value: string }[] = [];
+  const [piiDialogState, setPiiDialogState] = useState({
+    isOpen: false,
+    detectedPII: [],
+    originalText: ''
+  });
+
+  const handleSubmit = async (message: string) => {
+    const detectedPII = checkForPII(message);
     
-    Object.entries(patterns).forEach(([type, pattern]) => {
-      const matches = message.match(pattern);
-      if (matches) {
-        matches.forEach(match => {
-          detected.push({ type, value: match });
-        });
-      }
-    });
+    if (detectedPII.length > 0) {
+      setPiiDialogState({
+        isOpen: true,
+        detectedPII,
+        originalText: message
+      });
+      return;
+    }
     
-    return detected;
+    await sendMessage(message);
   };
 
-  const anonymizeText = (text: string, detectedPII: { type: string; value: string }[]) => {
-    let anonymized = text;
-    detectedPII.forEach(({ type, value }) => {
-      switch (type) {
-        case 'name':
-          anonymized = anonymized.replace(value, '[NAME]');
-          break;
-        case 'email':
-          anonymized = anonymized.replace(value, '[EMAIL]');
-          break;
-        case 'phone':
-          anonymized = anonymized.replace(value, '[PHONE]');
-          break;
-        // Add more cases as needed
-      }
-    });
-    return anonymized;
+  const handleAnonymize = (anonymizedText: string) => {
+    setPiiDialogState(prev => ({ ...prev, isOpen: false }));
+    sendMessage(anonymizedText);
+  };
+
+  const handleProceed = () => {
+    setPiiDialogState(prev => ({ ...prev, isOpen: false }));
+    sendMessage(piiDialogState.originalText);
   };
 
   return (
@@ -147,6 +146,15 @@ export function Chat({
         reload={reload}
         votes={votes}
         isReadonly={isReadonly}
+      />
+
+      <PIIShield
+        isOpen={piiDialogState.isOpen}
+        onClose={() => setPiiDialogState(prev => ({ ...prev, isOpen: false }))}
+        detectedPII={piiDialogState.detectedPII}
+        onAnonymize={handleAnonymize}
+        onProceed={handleProceed}
+        originalText={piiDialogState.originalText}
       />
     </>
   );
