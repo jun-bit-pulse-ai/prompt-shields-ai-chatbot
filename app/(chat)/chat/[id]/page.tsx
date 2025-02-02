@@ -7,6 +7,19 @@ import { DEFAULT_MODEL_NAME, models } from '@/lib/ai/models';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
 import { DataStreamHandler } from '@/components/data-stream-handler';
+import { PIIShield } from '@/components/pii-shield';
+
+// Add PII detection patterns
+export const piiPatterns = {
+  name: /\b[A-Z][a-z]+ [A-Z][a-z]+\b/,
+  ssn: /\b\d{3}[-.]?\d{2}[-.]?\d{4}\b/,
+  email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
+  phone: /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/,
+  dob: /\b(0[1-9]|1[0-2])[\/.-](0[1-9]|[12]\d|3[01])[\/.-](19|20)\d{2}\b/,
+  address: /\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Court|Ct|Circle|Cir|Trail|Trl|Parkway|Pkwy|Place|Pl)\b/i,
+  creditCard: /\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b/,
+  amount: /\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/,
+};
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -47,7 +60,9 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
         selectedModelId={selectedModelId}
         selectedVisibilityType={chat.visibility}
         isReadonly={session?.user?.id !== chat.userId}
+        piiPatterns={piiPatterns}
       />
+      <PIIShield />
       <DataStreamHandler id={id} />
     </>
   );

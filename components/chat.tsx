@@ -58,6 +58,40 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isBlockVisible = useBlockSelector((state) => state.isVisible);
 
+  const checkForPII = (message: string, patterns: Record<string, RegExp>) => {
+    const detected: { type: string; value: string }[] = [];
+    
+    Object.entries(patterns).forEach(([type, pattern]) => {
+      const matches = message.match(pattern);
+      if (matches) {
+        matches.forEach(match => {
+          detected.push({ type, value: match });
+        });
+      }
+    });
+    
+    return detected;
+  };
+
+  const anonymizeText = (text: string, detectedPII: { type: string; value: string }[]) => {
+    let anonymized = text;
+    detectedPII.forEach(({ type, value }) => {
+      switch (type) {
+        case 'name':
+          anonymized = anonymized.replace(value, '[NAME]');
+          break;
+        case 'email':
+          anonymized = anonymized.replace(value, '[EMAIL]');
+          break;
+        case 'phone':
+          anonymized = anonymized.replace(value, '[PHONE]');
+          break;
+        // Add more cases as needed
+      }
+    });
+    return anonymized;
+  };
+
   return (
     <>
       <div className="flex flex-col min-w-0 h-dvh bg-background">
