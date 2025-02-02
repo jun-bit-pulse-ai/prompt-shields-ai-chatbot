@@ -29,9 +29,9 @@ export async function generateAzureResponse(messages: any[]) {
     });
 
     const { text } = await generateText({
-      model: azureModel,
-      messages,
-      ...defaultAzureConfig
+        model: azureModel,
+        messages,
+        ...defaultAzureConfig
     });
 
     console.log('Azure Response:', text);
