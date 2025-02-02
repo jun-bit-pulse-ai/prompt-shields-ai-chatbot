@@ -9,6 +9,12 @@ export interface Model {
 
 export const models: Array<Model> = [
   {
+    id: 'azure-llama-3.3',
+    label: 'Llama 3.3 (Default)',
+    apiIdentifier: 'llama-3.3',
+    description: 'Latest Llama model running on Azure'
+  },
+  {
     id: 'gpt-4o-mini',
     label: 'GPT 4o mini',
     apiIdentifier: 'gpt-4o-mini',
@@ -22,4 +28,4 @@ export const models: Array<Model> = [
   },
 ] as const;
 
-export const DEFAULT_MODEL_NAME: string = 'gpt-4o-mini';
+export const DEFAULT_MODEL_NAME = 'azure-llama-3.3';
