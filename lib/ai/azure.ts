@@ -1,5 +1,5 @@
 import { createAzure } from '@ai-sdk/azure';
-import { streamText } from 'ai';
+import { generateText } from 'ai';
 
 // Create the base Azure client
 export const azure = createAzure({
@@ -28,7 +28,7 @@ export async function generateAzureResponse(messages: any[]) {
       deploymentName: process.env.AZURE_DEPLOYMENT_NAME
     });
 
-    const { text } = await streamText({
+    const { text } = await generateText({
       model: azureModel,
       messages,
     });
