@@ -14,6 +14,8 @@ import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
 import { useBlockSelector } from '@/hooks/use-block';
+import { PIIShield } from './pii-shield';
+import { checkForPII, anonymizeText } from '@/lib/pii-utils';
 
 export function Chat({
   id,
@@ -57,6 +59,37 @@ export function Chat({
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isBlockVisible = useBlockSelector((state) => state.isVisible);
+
+  const [piiDialogState, setPiiDialogState] = useState({
+    isOpen: false,
+    detectedPII: [],
+    originalText: ''
+  });
+
+  const handleSubmit = async (message: string) => {
+    const detectedPII = checkForPII(message);
+    
+    if (detectedPII.length > 0) {
+      setPiiDialogState({
+        isOpen: true,
+        detectedPII,
+        originalText: message
+      });
+      return;
+    }
+    
+    await sendMessage(message);
+  };
+
+  const handleAnonymize = (anonymizedText: string) => {
+    setPiiDialogState(prev => ({ ...prev, isOpen: false }));
+    sendMessage(anonymizedText);
+  };
+
+  const handleProceed = () => {
+    setPiiDialogState(prev => ({ ...prev, isOpen: false }));
+    sendMessage(piiDialogState.originalText);
+  };
 
   return (
     <>
@@ -113,6 +146,15 @@ export function Chat({
         reload={reload}
         votes={votes}
         isReadonly={isReadonly}
+      />
+
+      <PIIShield
+        isOpen={piiDialogState.isOpen}
+        onClose={() => setPiiDialogState(prev => ({ ...prev, isOpen: false }))}
+        detectedPII={piiDialogState.detectedPII}
+        onAnonymize={handleAnonymize}
+        onProceed={handleProceed}
+        originalText={piiDialogState.originalText}
       />
     </>
   );
